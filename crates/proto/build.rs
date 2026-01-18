@@ -41,9 +41,12 @@ fn main() {
     // Create output directory if it doesn't exist
     std::fs::create_dir_all(&out_dir).expect("Failed to create output directory");
 
+    let descriptor_path = out_dir.join("descriptor.bin");
+
     tonic_build::configure()
         .build_server(true)
         .build_client(true)
+        .file_descriptor_set_path(&descriptor_path)
         .out_dir(&out_dir)
         .compile(&proto_files, &[proto_dir])
         .unwrap_or_else(|e| panic!("Failed to compile proto files: {}", e));

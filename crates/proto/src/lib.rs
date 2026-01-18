@@ -6,3 +6,6 @@ pub mod generated {
     include!("generated/exchange.ledger.rs");
     include!("generated/exchange.marketdata.rs");
 }
+
+/// File descriptor set for reflection, generated at build time
+pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("generated/descriptor.bin");
