@@ -1,0 +1,250 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'api'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=api",
+                    "--package=api"
+                ],
+                "filter": {
+                    "name": "api",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'api'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=api",
+                    "--package=api"
+                ],
+                "filter": {
+                    "name": "api",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'app'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=app",
+                    "--package=app"
+                ],
+                "filter": {
+                    "name": "app",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'app'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=app",
+                    "--package=app"
+                ],
+                "filter": {
+                    "name": "app",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'scorpius_core'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=scorpius_core"
+                ],
+                "filter": {
+                    "name": "scorpius_core",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'ledger'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=ledger",
+                    "--package=ledger"
+                ],
+                "filter": {
+                    "name": "ledger",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'ledger'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=ledger",
+                    "--package=ledger"
+                ],
+                "filter": {
+                    "name": "ledger",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'market-data'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=market-data",
+                    "--package=market-data"
+                ],
+                "filter": {
+                    "name": "market-data",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'market-data'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=market-data",
+                    "--package=market-data"
+                ],
+                "filter": {
+                    "name": "market-data",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'matching'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=matching"
+                ],
+                "filter": {
+                    "name": "matching",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'matching'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=matching",
+                    "--package=matching"
+                ],
+                "filter": {
+                    "name": "matching",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'matching'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=matching",
+                    "--package=matching"
+                ],
+                "filter": {
+                    "name": "matching",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'proto'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=proto"
+                ],
+                "filter": {
+                    "name": "proto",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

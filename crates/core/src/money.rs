@@ -1,7 +1,4 @@
-use std::{
-    iter::Scan,
-    ops::{Add, Mul, Sub},
-};
+use std::ops::{Add, Mul, Sub};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Money {

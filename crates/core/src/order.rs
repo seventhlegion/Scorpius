@@ -16,7 +16,7 @@ pub enum OrderStatus {
     New,
     PartiallyFilled,
     Filled,
-    Canceled,
+    Cancelled,
 }
 
 #[derive(Debug, Clone)]
@@ -30,4 +30,10 @@ pub struct Order {
     pub quantity: Money,
     pub filled: Money,
     pub status: OrderStatus,
+}
+
+impl Order {
+    pub fn remaining(&self) -> Money {
+        self.quantity - self.filled
+    }
 }
