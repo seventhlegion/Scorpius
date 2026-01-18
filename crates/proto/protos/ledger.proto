@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package exchange.ledger;
+
+service LedgerService {
+  rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse);
+  rpc ApplyTransaction (ApplyTransactionRequest) returns (ApplyTransactionResponse);
+}
+
+message GetBalanceRequest {
+  string account_id = 1;
+  string asset = 2;
+}
+
+message GetBalanceResponse {
+  int64 amount = 1;
+  uint32 scale = 2;
+}
+
+message ApplyTransactionRequest {
+  string account_id = 1;
+  string asset = 2;
+  int64 delta = 3;
+  uint32 scale = 4;
+  string reason = 5;
+}
+
+message ApplyTransactionResponse {
+  bool success = 1;
+}

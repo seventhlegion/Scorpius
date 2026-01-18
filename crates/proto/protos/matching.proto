@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package exchange.matching;
+
+service MatchingService {
+  rpc PlaceOrder (PlaceOrderRequest) returns (PlaceOrderResponse);
+  rpc CancelOrder (CancelOrderRequest) returns (CancelOrderResponse);
+}
+
+message PlaceOrderRequest {
+  string user_id = 1;
+  string market_id = 2;
+  Side side = 3;
+  OrderType order_type = 4;
+  int64 price = 5;        // fixed precision, optional for market orders
+  int64 quantity = 6;
+  uint32 scale = 7;       // decimal scale
+}
+
+message PlaceOrderResponse {
+  string order_id = 1;
+}
+
+message CancelOrderRequest {
+  string order_id = 1;
+}
+
+message CancelOrderResponse {
+  bool success = 1;
+}
+
+enum Side {
+  SIDE_UNSPECIFIED = 0;
+  BUY = 1;
+  SELL = 2;
+}
+
+enum OrderType {
+  ORDER_TYPE_UNSPECIFIED = 0;
+  LIMIT = 1;
+  MARKET = 2;
+}

@@ -1,0 +1,19 @@
+[workspace]
+members = [
+    "crates/api",
+    "crates/app",
+    "crates/core",
+    "crates/ledger",
+    "crates/market-data",
+    "crates/matching",
+    "crates/proto",
+]
+
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Ali Ahmadi <ali.ahmadi.codes@gmail.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/seventhlegion/scorpius"

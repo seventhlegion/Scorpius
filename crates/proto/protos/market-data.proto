@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package exchange.marketdata;
+
+service MarketDataService {
+  rpc GetOrderBook (GetOrderBookRequest) returns (GetOrderBookResponse);
+}
+
+message GetOrderBookRequest {
+  string market_id = 1;
+}
+
+message GetOrderBookResponse {
+  repeated PriceLevel bids = 1;
+  repeated PriceLevel asks = 2;
+}
+
+message PriceLevel {
+  int64 price = 1;
+  int64 quantity = 2;
+  uint32 scale = 3;
+}
