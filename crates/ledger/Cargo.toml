@@ -1,6 +1,16 @@
 [package]
 name = "ledger"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
+tonic = "0.11"
+scorpius_core = { path = "../core" }
+proto = { path = "../proto" }
+async-trait = "0.1"
+thiserror = "1.0"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync"] }
+sqlx = { version = "0.7", features = ["runtime-tokio-native-tls", "postgres", "uuid", "chrono", "json"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+tracing = "0.1"

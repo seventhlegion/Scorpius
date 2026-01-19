@@ -151,4 +151,8 @@ impl MatchingEngine {
             false
         }
     }
+
+    pub fn get_order(&self, order_id: OrderId) -> Option<&Order> {
+        self.orders.get(&order_id)
+    }
 }

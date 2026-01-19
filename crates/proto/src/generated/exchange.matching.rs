@@ -2,28 +2,33 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PlaceOrderRequest {
+    /// idempotency key for the order
     #[prost(string, tag = "1")]
-    pub user_id: ::prost::alloc::string::String,
+    pub order_id: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
+    pub user_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
     pub market_id: ::prost::alloc::string::String,
-    #[prost(enumeration = "Side", tag = "3")]
+    #[prost(enumeration = "Side", tag = "4")]
     pub side: i32,
-    #[prost(enumeration = "OrderType", tag = "4")]
+    #[prost(enumeration = "OrderType", tag = "5")]
     pub order_type: i32,
     /// fixed precision, optional for market orders
-    #[prost(int64, tag = "5")]
-    pub price: i64,
     #[prost(int64, tag = "6")]
+    pub price: i64,
+    #[prost(int64, tag = "7")]
     pub quantity: i64,
     /// decimal scale
-    #[prost(uint32, tag = "7")]
+    #[prost(uint32, tag = "8")]
     pub scale: u32,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PlaceOrderResponse {
-    #[prost(string, tag = "1")]
-    pub order_id: ::prost::alloc::string::String,
+    #[prost(bool, tag = "1")]
+    pub accepted: bool,
+    #[prost(message, repeated, tag = "2")]
+    pub trades: ::prost::alloc::vec::Vec<TradeExecuted>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -36,6 +41,26 @@ pub struct CancelOrderRequest {
 pub struct CancelOrderResponse {
     #[prost(bool, tag = "1")]
     pub success: bool,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TradeExecuted {
+    #[prost(string, tag = "1")]
+    pub trade_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub buyer_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub seller_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "4")]
+    pub base_asset: ::prost::alloc::string::String,
+    #[prost(string, tag = "5")]
+    pub quote_asset: ::prost::alloc::string::String,
+    #[prost(int64, tag = "6")]
+    pub base_amount: i64,
+    #[prost(int64, tag = "7")]
+    pub quote_amount: i64,
+    #[prost(uint32, tag = "8")]
+    pub scale: u32,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]

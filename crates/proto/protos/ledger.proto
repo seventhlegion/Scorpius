@@ -3,28 +3,50 @@ syntax = "proto3";
 package exchange.ledger;
 
 service LedgerService {
-  rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse);
-  rpc ApplyTransaction (ApplyTransactionRequest) returns (ApplyTransactionResponse);
+rpc Reserve(ReserveRequest) returns (ReserveResponse);
+rpc Release(ReleaseRequest) returns (ReleaseResponse);
+rpc SettleTrade(SettleTradeRequest) returns (SettleTradeResponse);
 }
 
-message GetBalanceRequest {
-  string account_id = 1;
-  string asset = 2;
+message ReserveRequest {
+string request_id = 1; // idempotency key
+string user_id = 2;
+string asset = 3; // e.g. BTC, USDT
+int64 amount = 4; // fixed-point
+uint32 scale = 5; // decimals
 }
 
-message GetBalanceResponse {
-  int64 amount = 1;
-  uint32 scale = 2;
+
+message ReserveResponse {
+bool success = 1;
+string reason = 2; // insufficient_funds, duplicate, etc
 }
 
-message ApplyTransactionRequest {
-  string account_id = 1;
-  string asset = 2;
-  int64 delta = 3;
-  uint32 scale = 4;
-  string reason = 5;
+
+message ReleaseRequest {
+string request_id = 1; // idempotency key
+string user_id = 2;
+string asset = 3;
+int64 amount = 4;
+uint32 scale = 5;
 }
 
-message ApplyTransactionResponse {
-  bool success = 1;
+message ReleaseResponse {
+bool success = 1;
+}
+
+
+message SettleTradeRequest {
+string trade_id = 1; // idempotency key
+string buyer_id = 2;
+string seller_id = 3;
+string base_asset = 4; // BTC
+string quote_asset = 5; // USDT
+int64 base_amount = 6;
+int64 quote_amount = 7;
+uint32 scale = 8;
+}
+
+message SettleTradeResponse {
+bool success = 1;
 }

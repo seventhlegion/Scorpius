@@ -2,8 +2,8 @@
 members = [
     "crates/api",
     "crates/app",
-    "crates/core", "crates/gateway-service",
-    "crates/ledger",
+    "crates/core", "crates/gateway", "crates/gateway-service",
+    "crates/ledger", "crates/ledger-service",
     "crates/market-data",
     "crates/matching", "crates/matching-service",
     "crates/proto",

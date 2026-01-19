@@ -1,6 +1,7 @@
 use std::ops::{Add, Mul, Sub};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Money {
     pub amount: i64,
     pub scale: u32,

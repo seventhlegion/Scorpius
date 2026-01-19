@@ -1,8 +1,9 @@
 use std::fmt;
+use serde::{Deserialize, Serialize};
 
 macro_rules! id_type {
     ($name:ident) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
         pub struct $name(pub u64);
 
         impl fmt::Display for $name {

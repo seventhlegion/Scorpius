@@ -8,17 +8,19 @@ service MatchingService {
 }
 
 message PlaceOrderRequest {
-  string user_id = 1;
-  string market_id = 2;
-  Side side = 3;
-  OrderType order_type = 4;
-  int64 price = 5;        // fixed precision, optional for market orders
-  int64 quantity = 6;
-  uint32 scale = 7;       // decimal scale
+  string order_id = 1;    // idempotency key for the order
+  string user_id = 2;
+  string market_id = 3;
+  Side side = 4;
+  OrderType order_type = 5;
+  int64 price = 6;        // fixed precision, optional for market orders
+  int64 quantity = 7;
+  uint32 scale = 8;       // decimal scale
 }
 
 message PlaceOrderResponse {
-  string order_id = 1;
+  bool accepted = 1;
+  repeated TradeExecuted trades = 2;
 }
 
 message CancelOrderRequest {
@@ -39,4 +41,18 @@ enum OrderType {
   ORDER_TYPE_UNSPECIFIED = 0;
   LIMIT = 1;
   MARKET = 2;
+}
+
+message TradeExecuted {
+  string trade_id = 1;
+
+  string buyer_id = 2;
+  string seller_id = 3;
+
+  string base_asset = 4;
+  string quote_asset = 5;
+
+  int64 base_amount = 6;
+  int64 quote_amount = 7;
+  uint32 scale = 8;
 }
