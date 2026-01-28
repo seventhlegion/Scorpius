@@ -1229,10 +1229,14 @@ dependencies = [
  "proto",
  "rand",
  "scorpius_core",
+ "serde_json",
+ "sqlx",
+ "thiserror",
  "tokio",
  "tonic",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]

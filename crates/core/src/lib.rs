@@ -6,11 +6,15 @@ pub mod market;
 pub mod matching_event;
 pub mod money;
 pub mod order;
+pub mod order_snapshot;
 pub mod projector_config;
+pub mod trade_snapshot;
 
 pub use balance::BalanceSnapshot;
 pub use ids::{AccountId, MarketId, OrderId, TradeId, UserId};
 pub use ledger_event::EventMetadata;
 pub use money::Money;
 pub use order::{Order, OrderStatus, OrderType, Side};
+pub use order_snapshot::OrderSnapshot;
 pub use projector_config::ProjectorConfig;
+pub use trade_snapshot::TradeSnapshot;

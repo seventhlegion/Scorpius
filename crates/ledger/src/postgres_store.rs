@@ -2,6 +2,7 @@ use crate::event_store::{EventStore, EventStoreError, EventStoreResult};
 use scorpius_core::ledger_event::LedgerEvent;
 use sqlx::{Pool, Postgres, Row};
 use std::sync::Arc;
+use uuid::Uuid;
 
 /// PostgreSQL implementation of the event store
 ///
@@ -30,15 +31,17 @@ impl PostgresEventStore {
 #[async_trait::async_trait]
 impl EventStore for PostgresEventStore {
     async fn append(&self, event: &LedgerEvent) -> EventStoreResult<u64> {
-        let event_id = event.event_id();
+        let event_id_str = event.event_id();
+        let event_id = Uuid::parse_str(event_id_str)
+            .map_err(|e| EventStoreError::Database(format!("Invalid event_id UUID: {}", e)))?;
 
         // Check idempotency: if event_id already exists, return existing sequence
-        if let Some(existing_seq) = self.get_sequence_by_event_id(event_id).await? {
+        if let Some(existing_seq) = self.get_sequence_by_event_id(event_id_str).await? {
             return Ok(existing_seq);
         }
 
-        // Get next sequence number atomically
-        let sequence = self.next_sequence().await?;
+        // Use the sequence from the event's metadata (caller already allocated it)
+        let sequence = event.sequence();
 
         // Serialize event to JSONB
         let payload_value = serde_json::to_value(event)
@@ -55,6 +58,16 @@ impl EventStore for PostgresEventStore {
         };
 
         let metadata = event.metadata();
+
+        // Parse optional UUIDs for causation_id and correlation_id
+        let causation_id = metadata
+            .causation_id
+            .as_ref()
+            .and_then(|s| Uuid::parse_str(s).ok());
+        let correlation_id = metadata
+            .correlation_id
+            .as_ref()
+            .and_then(|s| Uuid::parse_str(s).ok());
 
         // Insert event in a transaction
         let result = sqlx::query(
@@ -76,8 +89,8 @@ impl EventStore for PostgresEventStore {
         .bind(event_id)
         .bind(metadata.schema_version as i32)
         .bind(metadata.timestamp)
-        .bind(metadata.causation_id.as_ref())
-        .bind(metadata.correlation_id.as_ref())
+        .bind(causation_id)
+        .bind(correlation_id)
         .bind(&metadata.source)
         .bind(&payload)
         .fetch_optional(self.pool.as_ref())
@@ -88,9 +101,9 @@ impl EventStore for PostgresEventStore {
             Some(row) => Ok(row.get::<i64, _>("sequence") as u64),
             None => {
                 // Event already exists, get its sequence
-                self.get_sequence_by_event_id(event_id)
+                self.get_sequence_by_event_id(event_id_str)
                     .await?
-                    .ok_or_else(|| EventStoreError::DuplicateEvent(event_id.to_string()))
+                    .ok_or_else(|| EventStoreError::DuplicateEvent(event_id_str.to_string()))
             }
         }
     }
@@ -126,18 +139,29 @@ impl EventStore for PostgresEventStore {
         .map_err(|e| EventStoreError::Database(e.to_string()))?;
 
         let mut events = Vec::new();
-        let mut expected_sequence = from_sequence;
+        let mut last_sequence: Option<u64> = None;
 
         for row in rows {
             let sequence = row.get::<i64, _>("sequence") as u64;
-            let payload: serde_json::Value = row.get("payload");
 
-            // Verify sequence ordering (detect gaps)
-            if sequence != expected_sequence && expected_sequence > 0 {
-                return Err(EventStoreError::SequenceGap {
-                    expected: expected_sequence,
-                    actual: sequence,
-                });
+            // Verify sequence ordering (detect gaps within the loaded range)
+            // Only check for gaps if we've already seen at least one event
+            if let Some(last_seq) = last_sequence {
+                if sequence != last_seq + 1 {
+                    return Err(EventStoreError::SequenceGap {
+                        expected: last_seq + 1,
+                        actual: sequence,
+                    });
+                }
+            } else {
+                // First event: allow it to start from any sequence >= from_sequence
+                // This handles cases where we're loading from a checkpoint
+                if sequence < from_sequence {
+                    return Err(EventStoreError::SequenceGap {
+                        expected: from_sequence,
+                        actual: sequence,
+                    });
+                }
             }
 
             // Deserialize event
@@ -146,17 +170,20 @@ impl EventStore for PostgresEventStore {
                 .map_err(|e| EventStoreError::Serialization(e.to_string()))?;
 
             events.push(event);
-            expected_sequence = sequence + 1;
+            last_sequence = Some(sequence);
         }
 
         Ok(events)
     }
 
     async fn exists(&self, event_id: &str) -> EventStoreResult<bool> {
+        let event_id_uuid = Uuid::parse_str(event_id)
+            .map_err(|e| EventStoreError::Database(format!("Invalid event_id UUID: {}", e)))?;
+
         let result = sqlx::query_scalar::<_, bool>(
             "SELECT EXISTS(SELECT 1 FROM events WHERE event_id = $1)",
         )
-        .bind(event_id)
+        .bind(event_id_uuid)
         .fetch_one(self.pool.as_ref())
         .await
         .map_err(|e| EventStoreError::Database(e.to_string()))?;
@@ -180,9 +207,12 @@ impl EventStore for PostgresEventStore {
 impl PostgresEventStore {
     /// Helper to get sequence number by event_id
     async fn get_sequence_by_event_id(&self, event_id: &str) -> EventStoreResult<Option<u64>> {
+        let event_id_uuid = Uuid::parse_str(event_id)
+            .map_err(|e| EventStoreError::Database(format!("Invalid event_id UUID: {}", e)))?;
+
         let result =
             sqlx::query_scalar::<_, i64>("SELECT sequence FROM events WHERE event_id = $1")
-                .bind(event_id)
+                .bind(event_id_uuid)
                 .fetch_optional(self.pool.as_ref())
                 .await
                 .map_err(|e| EventStoreError::Database(e.to_string()))?;

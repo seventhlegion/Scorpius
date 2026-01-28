@@ -292,6 +292,170 @@ ALTER TABLE balance_snapshots ADD CONSTRAINT check_balance_non_negative
     CHECK (available_amount >= 0 AND locked_amount >= 0);
 
 -- ============================================================================
+-- TRADE READ MODEL
+-- ============================================================================
+
+-- Read-only trade table derived exclusively from matching engine events.
+-- This read model:
+-- - Is append-only: trades are immutable once created
+-- - Is rebuilt from scratch by replaying all matching events
+-- - Never validates or rejects events (validation is done in write model)
+-- - Provides fast queries for trade history without replaying entire event stream
+-- - Can be safely dropped and recreated at any time
+-- - Fully auditable: complete history of all trades
+
+CREATE TABLE trades (
+    -- Primary key: trade_id
+    trade_id BIGINT NOT NULL PRIMARY KEY,
+
+    -- Market information
+    market_id BIGINT NOT NULL,
+
+    -- Order information
+    maker_order_id BIGINT NOT NULL,
+    taker_order_id BIGINT NOT NULL,
+
+    -- User information
+    buyer_id BIGINT NOT NULL,
+    seller_id BIGINT NOT NULL,
+
+    -- Trade execution details
+    price_amount BIGINT NOT NULL,
+    price_scale INTEGER NOT NULL,
+    quantity_amount BIGINT NOT NULL,
+    quantity_scale INTEGER NOT NULL,
+    quote_amount_amount BIGINT NOT NULL,
+    quote_amount_scale INTEGER NOT NULL,
+
+    -- Timestamp when trade occurred (from event metadata)
+    executed_at_ns BIGINT NOT NULL,
+
+    -- Metadata for tracking projection state
+    event_id UUID NOT NULL,
+    event_sequence BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    -- Ensure trade_id is unique (idempotency)
+    UNIQUE (trade_id)
+);
+
+-- Indexes for efficient queries
+CREATE INDEX idx_trades_market_id ON trades(market_id);
+CREATE INDEX idx_trades_buyer_id ON trades(buyer_id);
+CREATE INDEX idx_trades_seller_id ON trades(seller_id);
+CREATE INDEX idx_trades_maker_order_id ON trades(maker_order_id);
+CREATE INDEX idx_trades_taker_order_id ON trades(taker_order_id);
+CREATE INDEX idx_trades_executed_at ON trades(executed_at_ns);
+CREATE INDEX idx_trades_event_sequence ON trades(event_sequence);
+CREATE INDEX idx_trades_buyer_market ON trades(buyer_id, market_id);
+CREATE INDEX idx_trades_seller_market ON trades(seller_id, market_id);
+
+-- View for easy querying with formatted amounts
+CREATE VIEW trade_details AS
+SELECT
+    trade_id,
+    market_id,
+    maker_order_id,
+    taker_order_id,
+    buyer_id,
+    seller_id,
+    price_amount,
+    price_scale,
+    quantity_amount,
+    quantity_scale,
+    quote_amount_amount,
+    quote_amount_scale,
+    executed_at_ns,
+    event_id,
+    event_sequence,
+    created_at
+FROM trades;
+
+-- ============================================================================
+-- ORDER READ MODEL
+-- ============================================================================
+
+-- Read-only order snapshot table derived exclusively from matching engine events.
+-- This read model:
+-- - Is rebuilt from scratch by replaying all matching events
+-- - Never validates or rejects events (validation is done in write model)
+-- - Never used for matching or orderbook operations (read-only)
+-- - Provides fast queries for order status without replaying entire event stream
+-- - Can be safely dropped and recreated at any time
+-- - Tracks order lifecycle states: New, PartiallyFilled, Filled, Cancelled
+
+CREATE TABLE order_snapshots (
+    -- Primary key: order_id
+    order_id BIGINT NOT NULL PRIMARY KEY,
+
+    -- Market and user information
+    market_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+
+    -- Order details
+    side VARCHAR(10) NOT NULL CHECK (side IN ('Buy', 'Sell')),
+    order_type VARCHAR(10) NOT NULL CHECK (order_type IN ('Limit', 'Market')),
+
+    -- Price (NULL for market orders)
+    price_amount BIGINT,
+    price_scale INTEGER,
+
+    -- Quantity and fill information
+    quantity_amount BIGINT NOT NULL,
+    quantity_scale INTEGER NOT NULL,
+    filled_quantity_amount BIGINT NOT NULL DEFAULT 0,
+    filled_quantity_scale INTEGER NOT NULL DEFAULT 0,
+
+    -- Order status: New, PartiallyFilled, Filled, Cancelled
+    status VARCHAR(20) NOT NULL CHECK (status IN ('New', 'PartiallyFilled', 'Filled', 'Cancelled')),
+
+    -- Rejection reason (if status is effectively rejected, though OrderRejected events are tracked separately)
+    rejection_reason VARCHAR(255),
+
+    -- Timestamps
+    created_at_ns BIGINT NOT NULL,
+    updated_at_ns BIGINT NOT NULL,
+
+    -- Metadata for tracking projection state
+    last_processed_event_id UUID NOT NULL,
+    last_processed_sequence BIGINT NOT NULL,
+    last_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Indexes for efficient queries
+CREATE INDEX idx_order_snapshots_user_id ON order_snapshots(user_id);
+CREATE INDEX idx_order_snapshots_market_id ON order_snapshots(market_id);
+CREATE INDEX idx_order_snapshots_status ON order_snapshots(status);
+CREATE INDEX idx_order_snapshots_user_market ON order_snapshots(user_id, market_id);
+CREATE INDEX idx_order_snapshots_last_sequence ON order_snapshots(last_processed_sequence);
+CREATE INDEX idx_order_snapshots_created_at ON order_snapshots(created_at_ns);
+
+-- View for easy querying with remaining quantity
+CREATE VIEW order_details AS
+SELECT
+    order_id,
+    market_id,
+    user_id,
+    side,
+    order_type,
+    price_amount,
+    price_scale,
+    quantity_amount,
+    quantity_scale,
+    filled_quantity_amount,
+    filled_quantity_scale,
+    quantity_amount - filled_quantity_amount AS remaining_quantity_amount,
+    quantity_scale AS remaining_quantity_scale,
+    status,
+    rejection_reason,
+    created_at_ns,
+    updated_at_ns,
+    last_processed_event_id,
+    last_processed_sequence,
+    last_updated_at
+FROM order_snapshots;
+
+-- ============================================================================
 -- COMMENTS
 -- ============================================================================
 
@@ -308,3 +472,12 @@ COMMENT ON COLUMN balance_snapshots.available_amount IS 'Available balance (fund
 COMMENT ON COLUMN balance_snapshots.locked_amount IS 'Locked balance (funds reserved for active orders)';
 COMMENT ON COLUMN balance_snapshots.last_processed_event_id IS 'Last event_id that updated this balance (for idempotency)';
 COMMENT ON COLUMN balance_snapshots.last_processed_sequence IS 'Last sequence number processed for tracking projection progress';
+COMMENT ON TABLE order_snapshots IS 'Read-only order read model derived exclusively from matching engine events. Rebuildable from scratch, never used for matching or validation.';
+COMMENT ON COLUMN order_snapshots.status IS 'Order lifecycle state: New, PartiallyFilled, Filled, Cancelled';
+COMMENT ON COLUMN order_snapshots.last_processed_event_id IS 'Last event_id that updated this order (for idempotency)';
+COMMENT ON COLUMN order_snapshots.last_processed_sequence IS 'Last sequence number processed for tracking projection progress';
+COMMENT ON TABLE trades IS 'Read-only append-only trade read model derived exclusively from matching engine events. Rebuildable from scratch, never used for matching or validation. Trades are immutable once created.';
+COMMENT ON COLUMN trades.trade_id IS 'Unique trade identifier (primary key, ensures idempotency)';
+COMMENT ON COLUMN trades.executed_at_ns IS 'Timestamp when trade was executed (from event metadata)';
+COMMENT ON COLUMN trades.event_id IS 'Event ID that created this trade (for audit trail)';
+COMMENT ON COLUMN trades.event_sequence IS 'Event sequence number (for ordering and replay)';

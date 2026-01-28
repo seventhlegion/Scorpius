@@ -59,10 +59,11 @@ impl MatchingEngine {
                 order.filled = order.filled + quantity;
                 resting.filled = resting.filled + quantity;
 
+                let resting_id = resting.id;
                 let trade = Trade {
                     trade_id: TradeId(self.next_trade_id),
                     buy_order_id: order.id,
-                    sell_order_id: resting.id,
+                    sell_order_id: resting_id,
                     price: best_price,
                     quantity,
                 };
@@ -72,7 +73,8 @@ impl MatchingEngine {
                 if resting.remaining().amount > 0 {
                     queue.push_front(resting);
                 } else {
-                    resting.status = OrderStatus::Filled;
+                    // Resting order is fully filled - remove from orders map
+                    self.orders.remove(&resting_id);
                     // If queue is now empty, remove the price level to avoid infinite loop
                     if queue.is_empty() {
                         self.orderbook.asks.remove(&best_price);
@@ -90,7 +92,10 @@ impl MatchingEngine {
             }
         }
 
-        order.status = OrderStatus::PartiallyFilled;
+        // Only set PartiallyFilled if there were actual fills
+        if order.filled.amount > 0 {
+            order.status = OrderStatus::PartiallyFilled;
+        }
     }
 
     fn match_sell(&mut self, order: &mut Order, trades: &mut Vec<Trade>) {
@@ -108,9 +113,10 @@ impl MatchingEngine {
                 order.filled = order.filled + quantity;
                 resting.filled = resting.filled + quantity;
 
+                let resting_id = resting.id;
                 let trade = Trade {
                     trade_id: TradeId(self.next_trade_id),
-                    buy_order_id: resting.id,
+                    buy_order_id: resting_id,
                     sell_order_id: order.id,
                     price: best_price,
                     quantity,
@@ -121,7 +127,8 @@ impl MatchingEngine {
                 if resting.remaining().amount > 0 {
                     queue.push_front(resting);
                 } else {
-                    resting.status = OrderStatus::Filled;
+                    // Resting order is fully filled - remove from orders map
+                    self.orders.remove(&resting_id);
                     // If queue is now empty, remove the price level to avoid infinite loop
                     if queue.is_empty() {
                         self.orderbook.bids.remove(&best_price);
@@ -139,7 +146,10 @@ impl MatchingEngine {
             }
         }
 
-        order.status = OrderStatus::PartiallyFilled;
+        // Only set PartiallyFilled if there were actual fills
+        if order.filled.amount > 0 {
+            order.status = OrderStatus::PartiallyFilled;
+        }
     }
 
     pub fn cancel_order(&mut self, order_id: OrderId) -> bool {
